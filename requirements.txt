@@ -2,3 +2,7 @@ ultralytics
 flask
 waitress
 pillow
+gunicorn
+opencv-python
+scikit-image
+numpy

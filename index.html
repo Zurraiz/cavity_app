@@ -2,60 +2,932 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>YOLOv8 Object Detection</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Dental Detection Studio</title>
     <style>
-      canvas {
-          display:block;
-          border: 1px solid black;
-          margin-top:10px;
-      }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, #e8f4fd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        .header .subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1),
+                        0 0 0 1px rgba(255, 255, 255, 0.2);
+            padding: 40px;
+            animation: fadeInUp 1s ease-out 0.3s both;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+            background-size: 200% 100%;
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        .mode-section {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .mode-label {
+            font-size: 1.1rem;
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .mode-toggle {
+            display: inline-flex;
+            background: #f7fafc;
+            border-radius: 16px;
+            padding: 6px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .mode-btn {
+            background: transparent;
+            color: #718096;
+            padding: 14px 28px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .mode-btn:hover:not(.active) {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .legend {
+            margin-top: 15px;
+            font-size: 1rem;
+            color: #4a5568;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .controls-section {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .control-btn:hover::before {
+            left: 100%;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+        }
+
+        .clear-btn:hover {
+            box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+            box-shadow: 0 8px 25px rgba(81, 207, 102, 0.3);
+            opacity: 0.5;
+            cursor: not-allowed;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn.active {
+            opacity: 1;
+            cursor: pointer;
+        }
+
+        .download-btn.active:hover {
+            box-shadow: 0 12px 35px rgba(81, 207, 102, 0.4);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .canvas-section {
+            margin-bottom: 30px;
+        }
+
+        .canvas-container {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #f8fafc;
+            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.05);
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .canvas-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #a0aec0;
+            font-size: 1.2rem;
+            padding: 60px 20px;
+        }
+
+        .canvas-placeholder .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            max-height: 600px;
+            height: auto;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .results-section {
+            text-align: center;
+            position: relative;
+        }
+
+        .no-detections {
+            color: #e53e3e;
+            font-size: 1.3rem;
+            margin-top: 20px;
+            display: none;
+            padding: 20px;
+            background: rgba(254, 178, 178, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(254, 178, 178, 0.3);
+        }
+
+        .detection-summary {
+            color: #2d3748;
+            font-size: 1.6rem;
+            margin-top: 25px;
+            font-weight: 600;
+            display: none;
+            padding: 25px;
+            background: rgba(236, 253, 245, 0.8);
+            border-radius: 16px;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        .detection-summary span {
+            font-weight: 700;
+            padding: 8px 16px;
+            border-radius: 8px;
+            margin: 0 5px;
+            display: inline-block;
+        }
+
+        .detection-summary .cavity {
+            color: #dc2626;
+            background: rgba(173, 216, 230, 0.8); /* Changed from rgba(254, 226, 226, 0.8) to light blue */
+        }
+
+        .detection-summary .tooth {
+            color: #059669;
+            background: rgba(209, 250, 229, 0.8);
+        }
+
+        .depth-result {
+            margin-top: 15px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .depth-enamel {
+            background: rgba(209, 250, 229, 0.8);
+            color: #059669;
+        }
+
+        .depth-dentin {
+            background: rgba(255, 243, 205, 0.8);
+            color: #d97706;
+        }
+
+        .depth-pulpal {
+            background: rgba(254, 226, 226, 0.8);
+            color: #dc2626;
+        }
+
+        .loading {
+            display: none;
+            font-size: 1.2rem;
+            color: #667eea;
+            margin-top: 20px;
+            position: relative;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 12px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .loading::before {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+            vertical-align: middle;
+        }
+
+        .floating-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { left: 20%; animation-delay: 1s; }
+        .particle:nth-child(3) { left: 30%; animation-delay: 2s; }
+        .particle:nth-child(4) { left: 40%; animation-delay: 3s; }
+        .particle:nth-child(5) { left: 50%; animation-delay: 4s; }
+        .particle:nth-child(6) { left: 60%; animation-delay: 5s; }
+        .particle:nth-child(7) { left: 70%; animation-delay: 0.5s; }
+        .particle:nth-child(8) { left: 80%; animation-delay: 1.5s; }
+        .particle:nth-child(9) { left: 90%; animation-delay: 2.5s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .container {
+                padding: 25px;
+                margin: 10px;
+            }
+
+            .controls-section {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .control-btn {
+                width: 100%;
+                max-width: 280px;
+            }
+
+            .mode-toggle {
+                flex-direction: column;
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .canvas-container {
+                min-height: 300px;
+            }
+
+            .detection-summary {
+                font-size: 1.3rem;
+            }
+
+            .legend {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .header .subtitle {
+                font-size: 1rem;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .control-btn {
+                padding: 14px 24px;
+                font-size: 1rem;
+            }
+
+            .mode-btn {
+                padding: 12px 20px;
+                font-size: 0.95rem;
+            }
+
+            .detection-summary {
+                font-size: 1.1rem;
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 <body>
-    <input id="uploadInput" type="file"/>
-    <canvas></canvas>
-    <script>
-      /**
-       * "Upload" button onClick handler: uploads selected image file
-       * to backend, receives array of detected objects
-       * and draws them on top of image
-       */
-       const input = document.getElementById("uploadInput");
-       input.addEventListener("change",async(event) => {
-           const data = new FormData();
-           data.append("image_file",event.target.files[0],"image_file");
-           const response = await fetch("/detect",{
-               method:"post",
-               body:data
-           });
-           const boxes = await response.json();
-           draw_image_and_boxes(event.target.files[0],boxes);
-       })
+    <div class="floating-particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
 
-      /**
-       * Function draws the image from provided file
-       * and bounding boxes of detected objects on
-       * top of the image
-       * @param file Uploaded file object
-       * @param boxes Array of bounding boxes in format [[x1,y1,x2,y2,object_type,probability],...]
-       */
-      function draw_image_and_boxes(file,boxes) {
-          const img = new Image()
-          img.src = URL.createObjectURL(file);
-          img.onload = () => {
-              const canvas = document.querySelector("canvas");
-              canvas.width = img.width;
-              canvas.height = img.height;
-              const ctx = canvas.getContext("2d");
-              ctx.drawImage(img,0,0);
-              ctx.strokeStyle = "#00FF00";
-              ctx.lineWidth = 3;
-              ctx.font = "18px serif";
-              boxes.forEach(([x1,y1,x2,y2,label]) => {
-                  ctx.strokeRect(x1,y1,x2-x1,y2-y1);
-              });
-          }
-      }
+    <div class="main-container">
+        <div class="header">
+            <h1>AI Dental Detection Studio</h1>
+            <p class="subtitle">Advanced Cavity & Tooth Detection System</p>
+        </div>
+
+        <div class="container">
+            <div class="mode-section">
+                <div class="mode-label">Choose Detection Mode</div>
+                <div class="mode-toggle">
+                    <button class="mode-btn active" data-mode="detect" title="Fast screening for cavities and teeth">
+                        🔍 Quick Screening
+                    </button>
+                    <button class="mode-btn" data-mode="segment" title="Detailed analysis with precise boundaries">
+                        🏥 Clinical Analysis
+                    </button>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #059669;"></div>
+                        <span>Teeth</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #0000FF;"></div> <!-- Changed from #dc2626 to #0000FF -->
+                        <span>Cavities</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls-section">
+                <label for="uploadInput" class="control-btn">
+                    📤 Upload Image
+                </label>
+                <input id="uploadInput" type="file" accept="image/*"/>
+                <button class="control-btn clear-btn">
+                    🗑️ Clear Results
+                </button>
+                <button class="control-btn download-btn" id="downloadBtn">
+                    💾 Download Results
+                </button>
+            </div>
+
+            <div class="canvas-section">
+                <div class="canvas-container">
+                    <div class="canvas-placeholder">
+                        <div class="icon">🦷</div>
+                        <div>Upload a dental image to begin analysis</div>
+                    </div>
+                    <canvas style="display: none;"></canvas>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <div class="no-detections">
+                    ❌ No detections found in the image
+                </div>
+                <div class="detection-summary"></div>
+                <div class="loading">
+                    🔄 Processing your image with AI...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Mode button handler: toggles active mode
+         */
+        const modeButtons = document.querySelectorAll(".mode-btn");
+        let currentMode = "detect";
+        modeButtons.forEach(button => {
+            button.addEventListener("click", () => {
+                modeButtons.forEach(btn => btn.classList.remove("active"));
+                button.classList.add("active");
+                currentMode = button.dataset.mode;
+            });
+        });
+
+        /**
+         * Upload button handler: uploads selected image file to backend
+         */
+        const input = document.getElementById("uploadInput");
+        const loadingText = document.querySelector(".loading");
+        const downloadBtn = document.getElementById("downloadBtn");
+        const canvas = document.querySelector("canvas");
+        const canvasPlaceholder = document.querySelector(".canvas-placeholder");
+
+        input.addEventListener("change", async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+                alert("⚠️ File size exceeds 5MB limit.");
+                return;
+            }
+
+            loadingText.style.display = "block";
+            downloadBtn.classList.remove("active");
+
+            const data = new FormData();
+            data.append("image_file", file, "image_file");
+
+            try {
+                // Get detection or segmentation results
+                const response = await fetch(`/${currentMode}`, {
+                    method: "post",
+                    body: data
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const results = await response.json();
+                console.log(`Received ${currentMode} results:`, results);
+
+                // Handle results based on mode
+                let depthResult = null;
+                let detectionResults = results;
+                if (currentMode === "segment") {
+                    detectionResults = results.polygons || [];
+                    depthResult = results.depth || { depth: "No lesion", intensity: 0.0 };
+                }
+
+                draw_image_and_results(file, detectionResults, currentMode);
+                draw_summary(detectionResults, depthResult, currentMode);
+                downloadBtn.classList.add("active");
+
+                loadingText.style.display = "none";
+            } catch (error) {
+                loadingText.style.display = "none";
+                console.error(`Error processing image:`, error);
+                alert("⚠️ Failed to process image. Please try again.");
+            }
+        });
+
+        /**
+         * Clear button handler: resets canvas and summary
+         */
+        const clearButton = document.querySelector(".clear-btn");
+        clearButton.addEventListener("click", () => {
+            const ctx = canvas.getContext("2d");
+            const noDetectionsText = document.querySelector(".no-detections");
+            const summaryText = document.querySelector(".detection-summary");
+
+            canvas.width = 0;
+            canvas.height = 0;
+            canvas.style.display = "none";
+            canvasPlaceholder.style.display = "flex";
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            noDetectionsText.style.display = "none";
+            summaryText.style.display = "none";
+            summaryText.textContent = "";
+
+            document.getElementById("uploadInput").value = "";
+            downloadBtn.classList.remove("active");
+        });
+
+        /**
+         * Download button handler: downloads the processed image
+         */
+        downloadBtn.addEventListener("click", () => {
+            if (!downloadBtn.classList.contains("active")) return;
+
+            try {
+                const link = document.createElement('a');
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                const filename = `dental_analysis_${currentMode}_${timestamp}.png`;
+
+                canvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    link.href = url;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 'image/png');
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('⚠️ Failed to download image. Please try again.');
+            }
+        });
+
+        /**
+         * Function draws the image, bounding boxes or polygons, and displays a summary
+         * @param file Uploaded file object
+         * @param results Array of bounding boxes or polygons
+         * @param mode 'detect' or 'segment'
+         */
+        function draw_image_and_results(file, results, mode) {
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = () => {
+                const ctx = canvas.getContext("2d");
+                canvas.style.display = "block";
+                canvasPlaceholder.style.display = "none";
+
+                const maxWidth = 800;
+                const maxHeight = 600;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth || height > maxHeight) {
+                    const ratio = Math.min(maxWidth / width, maxHeight / height);
+                    width = width * ratio;
+                    height = height * ratio;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const classColors = {
+                    'Cavity': '#0000FF',  // Changed from #dc2626 to #0000FF
+                    'Tooth': '#059669',
+                    'Cavitys': '#0000FF', // Changed from #dc2626 to #0000FF
+                    'Tooths': '#059669'
+                };
+
+                ctx.lineWidth = 4;
+                ctx.shadowBlur = 4;
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+
+                if (mode === "detect") {
+                    results.forEach((result) => {
+                        if (result.length >= 5) {
+                            const [x1, y1, x2, y2] = result.slice(0, 4);
+                            const label = result[result.length - 1];
+
+                            if (typeof label !== 'string') return;
+
+                            const scaledX1 = x1 * (width / img.width);
+                            const scaledY1 = y1 * (height / img.height);
+                            const scaledX2 = x2 * (width / img.width);
+                            const scaledY2 = y2 * (height / img.height);
+
+                            const color = classColors[label] || '#059669';
+
+                            ctx.strokeStyle = color;
+                            ctx.strokeRect(scaledX1, scaledY1, scaledX2 - scaledX1, scaledY2 - scaledY1);
+                        }
+                    });
+                } else {
+                    let filteredResults = [...results];
+
+                    if (filteredResults.length > 1) {
+                        filteredResults = filteredResults.filter((result, index) => {
+                            const label = result[result.length - 1];
+                            if (label !== "Cavity" && label !== "Tooth") return true;
+
+                            const points = result.slice(0, -1);
+                            const poly1 = [];
+                            for (let i = 0; i < points.length; i += 2) {
+                                const x = points[i] * (width / img.width);
+                                const y = points[i + 1] * (height / img.height);
+                                poly1.push([x, y]);
+                            }
+
+                            const isInside = filteredResults.some((otherResult, otherIndex) => {
+                                if (index === otherIndex || otherResult[otherResult.length - 1] !== label) return false;
+
+                                const otherPoints = otherResult.slice(0, -1);
+                                const poly2 = [];
+                                for (let i = 0; i < otherPoints.length; i += 2) {
+                                    const x = otherPoints[i] * (width / img.width);
+                                    const y = otherPoints[i + 1] * (height / img.height);
+                                    poly2.push([x, y]);
+                                }
+
+                                const epsilon = 1e-10;
+                                return poly1.every(p1 => {
+                                    return isPointInPolygon(p1, poly2) || poly2.every(p2 =>
+                                        Math.hypot(p1[0] - p2[0], p1[1] - p2[1]) < epsilon
+                                    );
+                                });
+                            });
+
+                            return !isInside;
+                        });
+                    }
+
+                    filteredResults.forEach((result) => {
+                        const label = result[result.length - 1];
+                        let points = result.slice(0, -1);
+                        if (points.length < 2 || typeof label !== 'string') return;
+
+                        const scaledPoints = [];
+                        for (let i = 0; i < points.length; i += 2) {
+                            scaledPoints.push([points[i] * (width / img.width), points[i + 1] * (height / img.height)]);
+                        }
+
+                        const interpolatedPoints = [];
+                        for (let i = 0; i < scaledPoints.length; i++) {
+                            interpolatedPoints.push(scaledPoints[i]);
+                            if (i < scaledPoints.length - 1) {
+                                const p1 = scaledPoints[i];
+                                const p2 = scaledPoints[i + 1];
+                                const dist = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+                                if (dist > 10) {
+                                    const steps = Math.floor(dist / 5);
+                                    for (let j = 1; j <= steps; j++) {
+                                        const t = j / (steps + 1);
+                                        const x = p1[0] + t * (p2[0] - p1[0]);
+                                        const y = p1[1] + t * (p2[1] - p1[1]);
+                                        interpolatedPoints.push([x, y]);
+                                    }
+                                }
+                            }
+                        }
+                        interpolatedPoints.push(interpolatedPoints[0]);
+
+                        const color = classColors[label] || '#059669';
+
+                        ctx.fillStyle = color + '20';
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = 3;
+
+                        ctx.beginPath();
+                        ctx.moveTo(interpolatedPoints[0][0], interpolatedPoints[0][1]);
+                        for (let i = 1; i < interpolatedPoints.length; i++) {
+                            ctx.lineTo(interpolatedPoints[i][0], interpolatedPoints[i][1]);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                    });
+                }
+
+                ctx.shadowBlur = 0;
+                URL.revokeObjectURL(img.src);
+            };
+        }
+
+        /**
+         * Function to display detection/segmentation summary and depth result
+         * @param results Array of detection or segmentation results
+         * @param depthResult Depth estimation result
+         * @param mode 'detect' or 'segment'
+         */
+        function draw_summary(results, depthResult, mode) {
+            const noDetectionsText = document.querySelector(".no-detections");
+            const summaryText = document.querySelector(".detection-summary");
+
+            const classCounts = {};
+            results.forEach((result) => {
+                const label = result[result.length - 1];
+                if (typeof label === 'string') {
+                    classCounts[label] = (classCounts[label] || 0) + 1;
+                }
+            });
+
+            if (Object.keys(classCounts).length === 0) {
+                noDetectionsText.style.display = "block";
+                summaryText.style.display = "none";
+            } else {
+                noDetectionsText.style.display = "none";
+                summaryText.style.display = "block";
+
+                const summaryItems = Object.entries(classCounts).map(([cls, count]) => {
+                    const className = cls.toLowerCase().includes('cavity') ? 'cavity' : 'tooth';
+                    const plural = count > 1 ? (cls === 'Tooth' ? 'Teeth' : cls + 's') : cls;
+                    const icon = className === 'cavity' ? '🔴' : '🟢';
+                    return `<span class="${className}">${icon} ${count} ${plural}</span>`;
+                });
+
+                let depthHtml = '';
+                if (mode === 'segment' && depthResult && depthResult.depth) {
+                    // Define depth ranges based on classification
+                    let depthRange = '';
+                    if (depthResult.depth.includes('Enamel (superficial lesion) ')) {
+                        depthRange = '0.1–1.3mm';
+                    } else if (depthResult.depth.includes('Dentin (moderate lesion)')) {
+                        depthRange = '1.3–3mm';
+                    } else if (depthResult.depth.includes('Pulpal (deep lesion)')) {
+                        depthRange = '3–5.5mm';
+                    } else {
+                        depthRange = ' ';
+                    }
+
+                    const depthClass = depthResult.depth.includes('Enamel') ? 'depth-enamel' :
+                                      depthResult.depth.includes('Dentin') ? 'depth-dentin' : 'depth-pulpal';
+                    depthHtml = `<div class="depth-result ${depthClass}">🦷 Lesion Depth: ${depthResult.depth} (${depthRange})</div>`;
+                }
+
+                summaryText.innerHTML = `
+                    <div style="margin-bottom: 10px; font-size: 1.2rem; color: #4a5568;">Detection Results:</div>
+                    ${summaryItems.join("")}
+                    ${depthHtml}
+                `;
+            }
+        }
+
+        /**
+         * Helper function to check if a point is inside a polygon
+         * @param point [x, y] coordinates
+         * @param polygon Array of [x, y] coordinates
+         * @return boolean
+         */
+        function isPointInPolygon(point, polygon) {
+            const [x, y] = point;
+            let inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                const xi = polygon[i][0];
+                const yi = polygon[i][1];
+                const xj = polygon[j][0];
+                const yj = polygon[j][1];
+
+                const intersect = ((yi > y) !== (yj > y)) &&
+                                 (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
     </script>
 </body>
 </html>
