@@ -1,7 +1,12 @@
 # AI-Powered Dental Caries Detection System
 
 An intelligent web application that leverages deep learning to detect and analyze dental cavities in teeth photographic images. This system provides automated dental diagnosis assistance using state-of-the-art computer vision techniques.
+## Live Demo
+https://zurraiz-cavity-detection.hf.space
 
+
+## Models
+Model weights are hosted privately. The app downloads them at runtime.
 ## 🎯 What This Project Does
 
 This application helps dentists, dental professionals and common people identify and assess tooth decay (caries) by:
